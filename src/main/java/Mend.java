@@ -48,4 +48,12 @@ public class Mend {
             //world.createEntity(builder.build().);
         }
     }
+
+    public boolean contains(BlockSnapshot snapshot) {
+        for(BlockSnapshot bs :blockSnapshot) {
+            if(snapshot.getLocation().get().equals(bs.getLocation().get()))
+                return true;
+        }
+        return false;
+    }
 }
