@@ -7,7 +7,9 @@ import org.spongepowered.api.data.Transaction;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
 import org.spongepowered.api.event.block.NotifyNeighborBlockEvent;
+import org.spongepowered.api.event.cause.entity.spawn.BlockSpawnCause;
 import org.spongepowered.api.event.filter.cause.First;
+import org.spongepowered.api.event.filter.cause.Named;
 import org.spongepowered.api.event.item.inventory.DropItemEvent;
 import org.spongepowered.api.event.world.ExplosionEvent;
 import org.spongepowered.api.plugin.Plugin;
@@ -47,12 +49,16 @@ public class CreeperMend {
     }
 
     @Listener public void onUpdate(NotifyNeighborBlockEvent blockUpdateEvent, @First BlockSnapshot snapshot){
+        logger.warn("onUpdate");
         logger.warn(blockUpdateEvent.getCause().toString());
         if(pendingMends.stream().anyMatch(mend -> mend.contains(snapshot)))
             blockUpdateEvent.setCancelled(true);
     }
 
-    @Listener public void onBlockDrops(DropItemEvent dropItemEvent){
-        logger.warn("drop : "+dropItemEvent.getCause().toString());
+    @Listener public void onBlockDrops(DropItemEvent.Destruct dropItemEvent, @Named("Source") BlockSpawnCause cause) {
+        logger.warn("onBlockDrops");
+        logger.warn(dropItemEvent.getCause().toString());
+        final BlockSnapshot snapshot = cause.getBlockSnapshot();
+        dropItemEvent.setCancelled(pendingMends.stream().anyMatch(mend->mend.contains(snapshot)));
     }
 }
