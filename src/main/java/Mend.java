@@ -18,10 +18,10 @@ import org.spongepowered.api.world.World;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.StringJoiner;
 import java.util.function.Consumer;
 
 class Mend {
+    private final ExplosionTime time;
     private final Collection<Transaction<BlockSnapshot>> blockSnapshots = new LinkedHashSet<>(15);
     private final Multimap<Location<World>, EntitySnapshot> recordedDrops = Multimaps.newSetMultimap(Maps.newHashMap(), Sets::newHashSet);
     private final Cause cause;
@@ -33,30 +33,33 @@ class Mend {
         REPLACEABLE.add(BlockTypes.FLOWING_WATER);
     }
 
-    Mend(final Cause cause, final List<Transaction<BlockSnapshot>> bs) {
+    Mend(final Cause cause, final List<Transaction<BlockSnapshot>> bs, ExplosionTime time) {
         this.cause = cause;
         this.blockSnapshots.addAll(bs);
+        this.time = time;
     }
 
     final void heal(final Task t) {
-        this.blockSnapshots.stream().map(Transaction::getOriginal).forEach(this::restore);
+        this.blockSnapshots.stream().map(Mend::customOrOriginal).forEach(this::restore);
+    }
+
+    //If another plugin overrides the explosion output, use that.
+    private static BlockSnapshot customOrOriginal(Transaction<BlockSnapshot> t){
+        return t.getCustom().orElse(t.getOriginal());
     }
 
     private void restore(final BlockSnapshot bs){
+        //MendRepository.diamondDebug(bs,"restore");
         final Vector3i pos = bs.getPosition();
         final World world = bs.getLocation().get().getExtent();
         final BlockState current = world.getBlock(pos);
         if(REPLACEABLE.contains(current.getType())){
             bs.restore(true, false);
         } else {
-            CreeperMend.sLogger().warn("Dropping loads for "+this.toString());
-            CreeperMend.sLogger().warn(bs.toString());
             final Collection<EntitySnapshot> entities = this.recordedDrops.get(bs.getLocation().get());
-            final StringJoiner joiner = new StringJoiner(",\n", "[", "]");
-            for (final EntitySnapshot entity : entities) {
-                joiner.add(entity.toString());
-            }
-            CreeperMend.sLogger().warn(joiner.toString());
+            //for (final EntitySnapshot entity : entities) {
+                //CreeperMend.sLogger().warn("dropping "+entity);
+            //}
             entities.forEach(EntitySnapshot::restore);
         }
     }
@@ -70,6 +73,7 @@ class Mend {
     }
 
     final void recordDrops(final BlockSnapshot snapshot, final Collection<EntitySnapshot> items){
+
         this.recordedDrops.putAll(snapshot.getLocation().get(), items);
     }
 
@@ -83,6 +87,11 @@ class Mend {
                 .add("blockSnapshots", this.blockSnapshots)
                 .add("recordedDrops", this.recordedDrops)
                 .add("cause", this.cause)
+                .add("time", this.time)
                 .toString();
+    }
+
+    public ExplosionTime getTime() {
+        return time;
     }
 }

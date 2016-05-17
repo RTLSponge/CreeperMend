@@ -16,6 +16,7 @@ import org.spongepowered.api.event.world.ExplosionEvent;
 import org.spongepowered.api.plugin.Plugin;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Plugin(id = "CreeperMend", name = "CreeperMend", version = "0.2.0-SNAPSHOT")
@@ -26,18 +27,29 @@ public class CreeperMend {
     private final MendRepository pendingMends = new MendRepository();
     private static CreeperMend instance;
 
+    public static CreeperMend getInstance() {
+        return CreeperMend.instance;
+    }
+    private final ExplosionTime.Factory explosionTimeFactory = new ExplosionTime.Factory();
 
     @Listener
     public final void preInit(GamePreInitializationEvent e){
         this.instance = this;
     }
 
+    static ExplosionTime debug;
+    static Set<LocationTime> debugLTs;
+
     @Listener(order = Order.LAST)
     public final void onExplode(final ExplosionEvent.Detonate bang){
-        this.logger().debug("explosion scheduled");
+        this.logger().debug("explosion scheduled : "+ bang.getCause() + "\n"+bang.toString());
         final List<Transaction<BlockSnapshot>> transactions = bang.getTransactions();
-        final Mend mend = new Mend(bang.getCause(), transactions);
+        this.explosionTimeFactory.tick();
+        final Mend mend = new Mend(bang.getCause(), transactions, this.explosionTimeFactory.create());
+        debug = this.explosionTimeFactory.create();
         this.pendingMends.add(mend);
+        debugLTs = transactions.stream().map(t->new LocationTime(t.getOriginal().getLocation().get(), debug)).collect(Collectors.toSet());
+
     }
 
     @Listener(order = Order.LATE)
@@ -62,7 +74,14 @@ public class CreeperMend {
                 snapshot,
                 dropItemEvent.getEntities().stream()
                     .map(Entity::createSnapshot)
-                    .collect(Collectors.toList()));
+                    .collect(Collectors.toList()),
+                this.explosionTimeFactory.create()
+        );
+        final ExplosionTime newDebug = this.explosionTimeFactory.create();
+        assert debug.equals(this.explosionTimeFactory.create());
+        assert debugLTs.contains(new LocationTime(snapshot.getLocation().get(), newDebug));
+        //logger().warn("explosionTime Equals "+debug.toString() + ", " + newDebug.toString());
+
     }
 
     Logger logger(){
