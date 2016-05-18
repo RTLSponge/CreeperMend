@@ -37,7 +37,7 @@ class MendRepository {
                     mend.heal(task);
                     this.pendingMends.remove(mend);
                 })
-                .submit(this);
+                .submit(CreeperMend.getInstance());
         return submit;
     }
 

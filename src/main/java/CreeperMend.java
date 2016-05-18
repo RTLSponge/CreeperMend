@@ -26,6 +26,10 @@ public class CreeperMend {
     private final MendRepository pendingMends = new MendRepository();
     private static CreeperMend instance;
 
+    public static CreeperMend getInstance() {
+        return instance;
+    }
+
 
     @Listener
     public final void preInit(GamePreInitializationEvent e){
