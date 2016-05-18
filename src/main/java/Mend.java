@@ -53,13 +53,14 @@ class Mend {
         final Vector3i pos = bs.getPosition();
         final World world = bs.getLocation().get().getExtent();
         final BlockState current = world.getBlock(pos);
-        if(REPLACEABLE.contains(current.getType())){
+        //if(REPLACEABLE.contains(current.getType())){
+        if(false){
             bs.restore(true, false);
         } else {
             final Collection<EntitySnapshot> entities = this.recordedDrops.get(bs.getLocation().get());
-            //for (final EntitySnapshot entity : entities) {
-                //CreeperMend.sLogger().warn("dropping "+entity);
-            //}
+            for (final EntitySnapshot entity : entities) {
+                CreeperMend.sLogger().warn("dropping "+entity);
+            }
             entities.forEach(EntitySnapshot::restore);
         }
     }

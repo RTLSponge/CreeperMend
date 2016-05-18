@@ -25,6 +25,7 @@ class MendRepository {
             final LocationTime loctime = locTime(trans, mend);
             //diamondDebug(trans.getOriginal(), "adding");
             this.snapshotMendMap.put( loctime, mend);
+            CreeperMend.sLogger().warn("Test = "+ locTime(trans,mend).equals(locTime(trans.getOriginal(),mend.getTime())));
         } );
         this.scheduleMend(mend);
     }
