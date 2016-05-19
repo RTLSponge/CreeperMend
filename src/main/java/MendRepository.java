@@ -15,21 +15,30 @@ import java.util.concurrent.TimeUnit;
 
 class MendRepository {
     private final Set<Mend> pendingMends = Sets.newHashSet();
-    //TODO: bug, this should probably be a multimap. if so, we need a new class for a Location,time pair.
+    //Should work as long as the block snapshot in the cause of the drops is the same (identity) as the one in the explosion.
     private final Map<Location<World>, Mend> snapshotMendMap = Maps.newHashMap();
+
+    private static Set<BlockSnapshot> debugSnapshots = Sets.newHashSet();
 
     final void add( final Mend mend ) {
         this.pendingMends.add(mend);
-        mend.visitTransactions( trans -> this.snapshotMendMap.put(trans.getOriginal().getLocation().get(), mend) );
-        scheduleMend(mend);
+        mend.visitTransactions( trans -> {
+            this.snapshotMendMap.put(trans.getOriginal().getLocation().get(), mend);
+            debugSnapshots.add(trans.getOriginal());
+        } );
+        this.scheduleMend(mend);
     }
 
     final void remove( final Mend mend ) {
         this.pendingMends.remove(mend);
-        mend.visitTransactions( trans -> this.snapshotMendMap.remove( trans.getOriginal().getLocation().get() ) );
+        //At least it won't leak, as removals are based on the same snapshot that gets inserted.
+        mend.visitTransactions( trans -> {
+            this.snapshotMendMap.remove( trans.getOriginal().getLocation().get() );
+            debugSnapshots.remove(trans.getOriginal());
+        } );
     }
 
-    private final Task scheduleMend(Mend mend){
+    private Task scheduleMend(final Mend mend){
         final Task submit = Sponge.getGame().getScheduler().createTaskBuilder()
                 .delay(15, TimeUnit.SECONDS)
                 .name("Explosion Repair Task")
@@ -51,7 +60,9 @@ class MendRepository {
     }
 
     final void recordDrops( final BlockSnapshot snapshot, final List<EntitySnapshot> collect ) {
+        //Assumes that the snapshot is the same from the Detonate event to the drop event.
         final Mend mend = this.snapshotMendMap.get(snapshot.getLocation().get());
+        CreeperMend.sLogger().warn("Was it in the snapshot? + "+debugSnapshots.contains(snapshot));
         if( null == mend ) return;
         mend.recordDrops(snapshot, collect);
     }

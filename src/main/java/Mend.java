@@ -17,10 +17,13 @@ import org.spongepowered.api.world.World;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
 
+
+/**
+ * A schedule recording of an explosion + drops to be healed at a later date.
+ */
 class Mend {
     private final Collection<Transaction<BlockSnapshot>> blockSnapshots = new LinkedHashSet<>(15);
     private final Multimap<Location<World>, EntitySnapshot> recordedDrops = Multimaps.newSetMultimap(Maps.newHashMap(), Sets::newHashSet);
@@ -33,7 +36,7 @@ class Mend {
         REPLACEABLE.add(BlockTypes.FLOWING_WATER);
     }
 
-    Mend(final Cause cause, final List<Transaction<BlockSnapshot>> bs) {
+    Mend(final Cause cause, final Collection<Transaction<BlockSnapshot>> bs) {
         this.cause = cause;
         this.blockSnapshots.addAll(bs);
     }
@@ -49,14 +52,14 @@ class Mend {
         if(REPLACEABLE.contains(current.getType())){
             bs.restore(true, false);
         } else {
-            CreeperMend.sLogger().warn("Dropping loads for "+this.toString());
-            CreeperMend.sLogger().warn(bs.toString());
+            CreeperMend.sLogger().debug("Dropping loads for "+this.toString());
+            CreeperMend.sLogger().debug(bs.toString());
             final Collection<EntitySnapshot> entities = this.recordedDrops.get(bs.getLocation().get());
             final StringJoiner joiner = new StringJoiner(",\n", "[", "]");
             for (final EntitySnapshot entity : entities) {
                 joiner.add(entity.toString());
             }
-            CreeperMend.sLogger().warn(joiner.toString());
+            CreeperMend.sLogger().debug(joiner.toString());
             entities.forEach(EntitySnapshot::restore);
         }
     }
