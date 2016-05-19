@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Plugin(id = "CreeperMend", name = "CreeperMend", version = "0.2.0-SNAPSHOT")
+@Plugin(id = "creepermend", name = "CreeperMend", version = "0.2.0-SNAPSHOT")
 public class CreeperMend {
 
     @Inject
