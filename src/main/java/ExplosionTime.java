@@ -2,7 +2,7 @@ import com.google.common.base.Objects;
 import com.google.common.collect.ComparisonChain;
 import org.spongepowered.api.Sponge;
 
-class ExplosionTime implements Comparable<ExplosionTime>{
+final class ExplosionTime implements Comparable<ExplosionTime>{
 
     private final int ticks;
     private final int count;
@@ -14,21 +14,21 @@ class ExplosionTime implements Comparable<ExplosionTime>{
 
     @Override public String toString() {
         return Objects.toStringHelper(this)
-                .add("ticks", ticks)
-                .add("count", count)
+                .add("ticks", this.ticks)
+                .add("count", this.count)
                 .toString();
     }
 
-    @Override public boolean equals(final Object o) {
-        if (this == o) {
+    @Override public boolean equals(final Object obj) {
+        if (this == obj) {
             return true;
         }
-        if (o == null || this.getClass() != o.getClass()) {
+        if ((null == obj) || (this.getClass() != obj.getClass())) {
             return false;
         }
-        final ExplosionTime that = (ExplosionTime) o;
-        return this.ticks == that.ticks &&
-                this.count == that.count;
+        final ExplosionTime that = (ExplosionTime) obj;
+        return (this.ticks == that.ticks) &&
+                (this.count == that.count);
     }
 
     @Override public int hashCode() {
@@ -38,35 +38,48 @@ class ExplosionTime implements Comparable<ExplosionTime>{
     @Override public int compareTo(final ExplosionTime o) {
         return ComparisonChain
                 .start()
-                .compare(this.ticks,o.ticks)
-                .compare(this.count,o.count)
+                .compare(this.ticks, o.ticks)
+                .compare(this.count, o.count)
                 .result();
     }
 
     static class Factory {
-        private int i = 0;
+        private int explosionCounter = 0;
         private int lastTick = -1;
         Factory(){
             this.lastTick = Sponge.getServer().getRunningTimeTicks();
         }
         final ExplosionTime create(){
-            return new ExplosionTime(lastTick, this.i);
+            this.tick();
+            return new ExplosionTime(this.lastTick, this.explosionCounter);
         }
 
-        final void tick(){
+        //Nicer name to make code more readable.
+        private void tick(){
+            this.isNewTick();
+        }
+
+        private boolean isNewTick(){
             final int currentTick = Sponge.getServer().getRunningTimeTicks();
+            boolean retval = false;
             if(this.lastTick < currentTick) {
-                this.i = 0;
-            } else {
-                this.i++;
+                this.explosionCounter = 0;
+                retval = true;
             }
             this.lastTick = currentTick;
+            return retval;
         }
 
-        @Override public String toString() {
+        final void countExplosion(){
+            if(!this.isNewTick()) {
+                this.explosionCounter++;
+            }
+        }
+
+        @Override public final String toString() {
             return Objects.toStringHelper(this)
-                    .add("i", i)
-                    .add("lastTick", lastTick)
+                    .add("explosionCounter", this.explosionCounter)
+                    .add("lastTick", this.lastTick)
                     .toString();
         }
     }

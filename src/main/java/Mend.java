@@ -27,13 +27,13 @@ class Mend {
     private final Cause cause;
     private static final Collection<BlockType> REPLACEABLE = new LinkedHashSet<>(3);
 
-    {
+    static {
         REPLACEABLE.add(BlockTypes.AIR);
         REPLACEABLE.add(BlockTypes.WATER);
         REPLACEABLE.add(BlockTypes.FLOWING_WATER);
     }
 
-    Mend(final Cause cause, final List<Transaction<BlockSnapshot>> bs, ExplosionTime time) {
+    Mend(final Cause cause, final List<Transaction<BlockSnapshot>> bs, final ExplosionTime time) {
         this.cause = cause;
         this.blockSnapshots.addAll(bs);
         this.time = time;
@@ -44,23 +44,18 @@ class Mend {
     }
 
     //If another plugin overrides the explosion output, use that.
-    private static BlockSnapshot customOrOriginal(Transaction<BlockSnapshot> t){
+    private static BlockSnapshot customOrOriginal(final Transaction<BlockSnapshot> t){
         return t.getCustom().orElse(t.getOriginal());
     }
 
     private void restore(final BlockSnapshot bs){
-        //MendRepository.diamondDebug(bs,"restore");
         final Vector3i pos = bs.getPosition();
         final World world = bs.getLocation().get().getExtent();
         final BlockState current = world.getBlock(pos);
-        //if(REPLACEABLE.contains(current.getType())){
-        if(false){
+        if(REPLACEABLE.contains(current.getType())){
             bs.restore(true, false);
         } else {
             final Collection<EntitySnapshot> entities = this.recordedDrops.get(bs.getLocation().get());
-            for (final EntitySnapshot entity : entities) {
-                CreeperMend.sLogger().warn("dropping "+entity);
-            }
             entities.forEach(EntitySnapshot::restore);
         }
     }
@@ -74,7 +69,6 @@ class Mend {
     }
 
     final void recordDrops(final BlockSnapshot snapshot, final Collection<EntitySnapshot> items){
-
         this.recordedDrops.putAll(snapshot.getLocation().get(), items);
     }
 
@@ -83,7 +77,7 @@ class Mend {
     }
 
 
-    @Override public String toString() {
+    @Override public final String toString() {
         return Objects.toStringHelper(this)
                 .add("blockSnapshots", this.blockSnapshots)
                 .add("recordedDrops", this.recordedDrops)
@@ -92,7 +86,7 @@ class Mend {
                 .toString();
     }
 
-    public ExplosionTime getTime() {
-        return time;
+    final ExplosionTime getTime() {
+        return this.time;
     }
 }
